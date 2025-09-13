@@ -1,5 +1,11 @@
 import * as cron from "node-cron";
 import Game from "../models/Game";
+import {
+  istMidnightUTCms,
+  hmToMinutes,
+  currentISTMinutes,
+} from "../utils/time";
+import { istMidnightUTCms, hmToMinutes } from "../utils/time";
 
 class AutoCloseEnhancedService {
   private static instance: AutoCloseEnhancedService;
@@ -166,18 +172,10 @@ class AutoCloseEnhancedService {
   }
 
   private convertISTtoUTC(baseDate: Date, timeStr: string): Date {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    const istDate = new Date(
-      baseDate.getFullYear(),
-      baseDate.getMonth(),
-      baseDate.getDate(),
-      hours,
-      minutes,
-      0,
-      0,
-    );
-    // IST = UTC + 5:30 → UTC = IST - 5:30
-    return new Date(istDate.getTime() - 5.5 * 60 * 60 * 1000);
+    // Build UTC epoch for given IST HH:mm on the IST date of baseDate
+    const midnightUTC = istMidnightUTCms(baseDate);
+    const minutes = hmToMinutes(timeStr);
+    return new Date(midnightUTC + minutes * 60 * 1000);
   }
 
   private computeUTCTimesForCycle(
@@ -186,42 +184,27 @@ class AutoCloseEnhancedService {
     end: string,
     result: string,
   ) {
-    const toMinutes = (t: string) => {
-      const [h, m] = t.split(":").map(Number);
-      return h * 60 + m;
-    };
-    const startM = toMinutes(start);
-    const endM = toMinutes(end);
-    const resultM = toMinutes(result);
+    const startM = hmToMinutes(start);
+    const endM = hmToMinutes(end);
+    const resultM = hmToMinutes(result);
 
-    // Build IST dates anchored to baseDate
-    let startDate = new Date(baseDate);
-    startDate.setHours(Math.floor(startM / 60), startM % 60, 0, 0);
+    // Anchor to midnight IST of baseDate (expressed in UTC epoch)
+    const midnightUTC = istMidnightUTCms(baseDate);
 
-    let endDate = new Date(baseDate);
-    endDate.setHours(Math.floor(endM / 60), endM % 60, 0, 0);
+    // Start
+    const startUTC = new Date(midnightUTC + startM * 60 * 1000);
 
-    let resultDate = new Date(baseDate);
-    resultDate.setHours(Math.floor(resultM / 60), resultM % 60, 0, 0);
+    // End (may roll to next day if end < start)
+    const endDayOffset = endM < startM ? 1440 : 0; // minutes
+    const endUTC = new Date(midnightUTC + (endM + endDayOffset) * 60 * 1000);
 
-    // Handle cross-day relations
-    if (endM < startM) {
-      // end next day
-      endDate.setDate(endDate.getDate() + 1);
-    }
-    // result relative to end
-    if (resultM < endM) {
-      resultDate.setDate(resultDate.getDate() + 1);
-    }
+    // Result relative to end (roll to next day if earlier than end time)
+    const resultDayOffset = resultM < endM ? 1440 : 0;
+    const resultUTC = new Date(
+      midnightUTC + (resultM + resultDayOffset) * 60 * 1000,
+    );
 
-    // Convert to UTC timestamps
-    const toTimeStr = (d: Date) =>
-      `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    return {
-      startUTC: this.convertISTtoUTC(startDate, toTimeStr(startDate)),
-      endUTC: this.convertISTtoUTC(endDate, toTimeStr(endDate)),
-      resultUTC: this.convertISTtoUTC(resultDate, toTimeStr(resultDate)),
-    };
+    return { startUTC, endUTC, resultUTC };
   }
 
   private computeStatus(
@@ -233,9 +216,7 @@ class AutoCloseEnhancedService {
       const [h, m] = t.split(":").map(Number);
       return h * 60 + m;
     };
-    const nowUTC = new Date();
-    const nowIST = new Date(nowUTC.getTime() + 5.5 * 60 * 60 * 1000);
-    const currentM = nowIST.getHours() * 60 + nowIST.getMinutes();
+    const currentM = currentISTMinutes(new Date());
     const startM = toMinutes(start);
     const endM = toMinutes(end);
     const resultM = toMinutes(result);

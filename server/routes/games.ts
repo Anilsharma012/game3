@@ -73,9 +73,10 @@ export const getAllGames: RequestHandler = async (req, res) => {
       if (game.forcedStatus === "closed") {
         status = "closed";
       } else if (game.forcedStatus === "open") {
-        const canNaturallyOpen = endM > startM
-          ? currentM >= startM && currentM < endM
-          : currentM >= startM || currentM < endM;
+        const canNaturallyOpen =
+          endM > startM
+            ? currentM >= startM && currentM < endM
+            : currentM >= startM || currentM < endM;
         if (canNaturallyOpen && status !== "result_declared") {
           status = "open";
         }
@@ -125,7 +126,8 @@ export const getGameById: RequestHandler = async (req, res) => {
     }
 
     // Calculate current status (IST-aware + cross-day)
-    let currentStatus: "waiting" | "open" | "closed" | "result_declared" = "waiting";
+    let currentStatus: "waiting" | "open" | "closed" | "result_declared" =
+      "waiting";
     if (game.isActive) {
       const toMinutes = (t: string) => {
         const [h, m] = t.split(":").map(Number);
@@ -145,16 +147,20 @@ export const getGameById: RequestHandler = async (req, res) => {
           else if (currentM >= resultM) currentStatus = "result_declared";
         } else {
           if (currentM >= endM) currentStatus = "closed";
-          else if (currentM < startM && currentM >= resultM) currentStatus = "result_declared";
+          else if (currentM < startM && currentM >= resultM)
+            currentStatus = "result_declared";
         }
       } else {
         if (currentM >= startM || currentM < endM) currentStatus = "open";
         else if (resultM > endM) {
           if (currentM >= endM && currentM < resultM) currentStatus = "closed";
-          else if (currentM >= resultM && currentM < startM) currentStatus = "result_declared";
+          else if (currentM >= resultM && currentM < startM)
+            currentStatus = "result_declared";
         } else {
-          if ((currentM >= endM && currentM < 1440) || currentM < resultM) currentStatus = "closed";
-          else if (currentM >= resultM && currentM < startM) currentStatus = "result_declared";
+          if ((currentM >= endM && currentM < 1440) || currentM < resultM)
+            currentStatus = "closed";
+          else if (currentM >= resultM && currentM < startM)
+            currentStatus = "result_declared";
         }
       }
 
@@ -164,8 +170,12 @@ export const getGameById: RequestHandler = async (req, res) => {
       if (game.forcedStatus === "closed") {
         currentStatus = "closed";
       } else if (game.forcedStatus === "open") {
-        const canNaturallyOpen = endM > startM ? (currentM >= startM && currentM < endM) : (currentM >= startM || currentM < endM);
-        if (canNaturallyOpen && currentStatus !== "result_declared") currentStatus = "open";
+        const canNaturallyOpen =
+          endM > startM
+            ? currentM >= startM && currentM < endM
+            : currentM >= startM || currentM < endM;
+        if (canNaturallyOpen && currentStatus !== "result_declared")
+          currentStatus = "open";
       }
     }
 
@@ -235,8 +245,7 @@ export const placeBet: RequestHandler = async (req, res) => {
 
     if (game.isActive) {
       // Calculate based on time with proper cross-day handling (IST-aware)
-      const nowUTC = new Date();
-      const nowIST = new Date(nowUTC.getTime() + 5.5 * 60 * 60 * 1000);
+      const { currentISTMinutes } = require("../utils/time");
 
       // Helper function to convert HH:mm to minutes for comparison
       const timeToMinutes = (time: string) => {
@@ -244,7 +253,7 @@ export const placeBet: RequestHandler = async (req, res) => {
         return hours * 60 + minutes;
       };
 
-      const currentMinutes = nowIST.getHours() * 60 + nowIST.getMinutes();
+      const currentMinutes = currentISTMinutes(new Date());
       const startMinutes = timeToMinutes(game.startTime);
       const endMinutes = timeToMinutes(game.endTime);
       const resultMinutes = timeToMinutes(game.resultTime);
@@ -322,9 +331,10 @@ export const placeBet: RequestHandler = async (req, res) => {
       if (game.forcedStatus === "closed") {
         gameStatus = "closed";
       } else if (game.forcedStatus === "open") {
-        const canNaturallyOpen = endMinutes > startMinutes
-          ? currentMinutes >= startMinutes && currentMinutes < endMinutes
-          : currentMinutes >= startMinutes || currentMinutes < endMinutes;
+        const canNaturallyOpen =
+          endMinutes > startMinutes
+            ? currentMinutes >= startMinutes && currentMinutes < endMinutes
+            : currentMinutes >= startMinutes || currentMinutes < endMinutes;
         if (!(canNaturallyOpen && gameStatus === "open")) {
           // keep computed status; do not allow pre-start/post-end bets
         }
@@ -347,15 +357,35 @@ export const placeBet: RequestHandler = async (req, res) => {
 
     // Additional guard: Check acceptingBets flag (set by auto-close service)
     if (game.acceptingBets === false) {
-      console.log("❌ Game not accepting bets (auto-closed)");
-      return res.status(403).json({
-        // HTTP 403 Forbidden for auto-closed games
-        success: false,
-        message:
-          "This game has been automatically closed and is no longer accepting bets",
-        currentStatus: game.currentStatus,
-        acceptingBets: false,
-      });
+      if (gameStatus === "open") {
+        // Self-heal race: if time window says OPEN but flag is false (cron delay), flip it
+        console.log(
+          "⚠️ acceptingBets=false but status=open — enabling acceptingBets now",
+        );
+        try {
+          await Game.findByIdAndUpdate(game._id, {
+            $set: {
+              acceptingBets: true,
+              currentStatus: "open",
+              lastStatusChange: new Date(),
+            },
+            $unset: { forcedStatus: "" },
+          });
+        } catch (e) {
+          console.warn("Could not update acceptingBets flag immediately:", e);
+        }
+        // Continue without blocking
+      } else {
+        console.log("❌ Game not accepting bets (auto-closed)");
+        return res.status(403).json({
+          // HTTP 403 Forbidden for auto-closed games
+          success: false,
+          message:
+            "This game has been automatically closed and is no longer accepting bets",
+          currentStatus: game.currentStatus,
+          acceptingBets: false,
+        });
+      }
     }
 
     // Enhanced UTC time check for auto-close

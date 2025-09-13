@@ -1,10 +1,9 @@
 import express from "express";
 import Game from "../models/Game";
 import Result from "../models/Result";
+import { istDateString, IST_TIMEZONE } from "../utils/time";
 
 const router = express.Router();
-
-
 
 // TOP imports ke niche add karo:
 function getDeclaredByName(declaredBy: unknown): string {
@@ -18,7 +17,6 @@ function getDeclaredByName(declaredBy: unknown): string {
   return "System";
 }
 
-
 /**
  * GET /api/charts/results
  * Fetch results by IST date (for Charts page compatibility)
@@ -28,7 +26,7 @@ router.get("/results", async (req, res) => {
     const { date } = req.query;
 
     // Default to today in IST if no date provided
-    let targetDateIST = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    let targetDateIST = istDateString(); // YYYY-MM-DD (IST)
     if (date && typeof date === "string") {
       targetDateIST = date;
     }
@@ -93,7 +91,7 @@ router.get("/results/by-date", async (req, res) => {
     const { date, marketId } = req.query;
 
     // Default to today in IST if no date provided
-    let targetDateIST = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    let targetDateIST = istDateString(); // YYYY-MM-DD (IST)
     if (date && typeof date === "string") {
       targetDateIST = date;
     }
@@ -144,7 +142,6 @@ router.get("/results/by-date", async (req, res) => {
       status: result.status,
       method: result.method,
       declaredBy: getDeclaredByName(result.declaredBy),
-
 
       // UI helpers
       icon: getMarketIcon(result.marketId),
@@ -199,7 +196,7 @@ router.get("/results/history", async (req, res) => {
     for (let i = 0; i < numDays; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateIST = date.toISOString().split("T")[0];
+      const dateIST = istDateString(date);
 
       // Build query for this date
       const query: any = {
@@ -224,6 +221,7 @@ router.get("/results/history", async (req, res) => {
             year: "numeric",
             month: "short",
             day: "numeric",
+            timeZone: IST_TIMEZONE,
           }),
           results: dayResults.map((result) => ({
             marketName: result.marketName,
@@ -506,7 +504,7 @@ function getGameIcon(marketName: string, gameType?: string): string {
   if (name.includes("dubai")) return "🏢";
   if (name.includes("mumbai")) return "🌊";
   if (name.includes("kolkata")) return "🎭";
-  if (name.includes("chennai")) return "🏛️";
+  if (name.includes("chennai")) return "����️";
   if (name.includes("bangalore")) return "🌟";
   if (name.includes("hyderabad")) return "💎";
   if (name.includes("rajdhani")) return "👑";
