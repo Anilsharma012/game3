@@ -94,7 +94,7 @@ router.get("/results/by-date", async (req, res) => {
     const { date, marketId } = req.query;
 
     // Default to today in IST if no date provided
-    let targetDateIST = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    let targetDateIST = istDateString(); // YYYY-MM-DD (IST)
     if (date && typeof date === "string") {
       targetDateIST = date;
     }
@@ -504,7 +504,7 @@ function getGameIcon(marketName: string, gameType?: string): string {
   if (name.includes("gali")) return "⚔️";
   if (name.includes("disawer") || name.includes("disawar")) return "🎲";
   if (name.includes("delhi")) return "🦁";
-  if (name.includes("dubai")) return "��";
+  if (name.includes("dubai")) return "🏢";
   if (name.includes("mumbai")) return "🌊";
   if (name.includes("kolkata")) return "🎭";
   if (name.includes("chennai")) return "🏛️";
