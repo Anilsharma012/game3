@@ -42,3 +42,10 @@ export function istHMToUTCDate(hm: string, baseDate: Date = new Date()): Date {
 export function addDaysUTC(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
+
+// Minutes since midnight IST for the provided date (default: now)
+export function currentISTMinutes(baseDate: Date = new Date()): number {
+  const midnightUTC = istMidnightUTCms(baseDate);
+  const diffMs = baseDate.getTime() - midnightUTC;
+  return Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 1000));
+}
