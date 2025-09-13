@@ -1,5 +1,6 @@
 import * as cron from "node-cron";
 import Game from "../models/Game";
+import { istMidnightUTCms, hmToMinutes, currentISTMinutes } from "../utils/time";
 import { istMidnightUTCms, hmToMinutes } from "../utils/time";
 
 class AutoCloseEnhancedService {
@@ -211,9 +212,7 @@ class AutoCloseEnhancedService {
       const [h, m] = t.split(":").map(Number);
       return h * 60 + m;
     };
-    const nowUTC = new Date();
-    const nowIST = new Date(nowUTC.getTime() + 5.5 * 60 * 60 * 1000);
-    const currentM = nowIST.getHours() * 60 + nowIST.getMinutes();
+    const currentM = currentISTMinutes(new Date());
     const startM = toMinutes(start);
     const endM = toMinutes(end);
     const resultM = toMinutes(result);
