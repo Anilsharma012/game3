@@ -200,7 +200,7 @@ router.get("/results/history", async (req, res) => {
     for (let i = 0; i < numDays; i++) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateIST = date.toISOString().split("T")[0];
+      const dateIST = istDateString(date);
 
       // Build query for this date
       const query: any = {
