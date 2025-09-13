@@ -1,5 +1,6 @@
 import * as cron from 'node-cron';
 import Game from '../models/Game';
+import { istMidnightUTCms, hmToMinutes } from '../utils/time';
 
 class AutoCloseService {
   private static instance: AutoCloseService;
