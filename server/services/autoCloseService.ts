@@ -19,13 +19,11 @@ class AutoCloseService {
    * Convert time string (HH:mm) to today's UTC Date
    */
   private timeToUTC(timeString: string): Date {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const istDate = new Date();
-    istDate.setHours(hours, minutes, 0, 0);
-
-    // IST → UTC (minus 5:30)
-    const utcDate = new Date(istDate.getTime() - 5.5 * 60 * 60 * 1000);
-    return utcDate;
+    // Build UTC epoch for today's IST HH:mm, independent of server timezone
+    const { istMidnightUTCms, hmToMinutes } = require('../utils/time');
+    const minutes = hmToMinutes(timeString);
+    const midnightUTC = istMidnightUTCms(new Date());
+    return new Date(midnightUTC + minutes * 60 * 1000);
   }
 
   /**
