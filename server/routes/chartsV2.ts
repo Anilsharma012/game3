@@ -225,6 +225,7 @@ router.get("/results/history", async (req, res) => {
             year: "numeric",
             month: "short",
             day: "numeric",
+            timeZone: IST_TIMEZONE,
           }),
           results: dayResults.map((result) => ({
             marketName: result.marketName,
@@ -507,7 +508,7 @@ function getGameIcon(marketName: string, gameType?: string): string {
   if (name.includes("dubai")) return "🏢";
   if (name.includes("mumbai")) return "🌊";
   if (name.includes("kolkata")) return "🎭";
-  if (name.includes("chennai")) return "🏛️";
+  if (name.includes("chennai")) return "����️";
   if (name.includes("bangalore")) return "🌟";
   if (name.includes("hyderabad")) return "💎";
   if (name.includes("rajdhani")) return "👑";
