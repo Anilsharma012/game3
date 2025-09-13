@@ -21,7 +21,6 @@ class AutoCloseService {
    */
   private timeToUTC(timeString: string): Date {
     // Build UTC epoch for today's IST HH:mm, independent of server timezone
-    const { istMidnightUTCms, hmToMinutes } = require('../utils/time');
     const minutes = hmToMinutes(timeString);
     const midnightUTC = istMidnightUTCms(new Date());
     return new Date(midnightUTC + minutes * 60 * 1000);
