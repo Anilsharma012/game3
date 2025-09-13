@@ -347,15 +347,29 @@ export const placeBet: RequestHandler = async (req, res) => {
 
     // Additional guard: Check acceptingBets flag (set by auto-close service)
     if (game.acceptingBets === false) {
-      console.log("❌ Game not accepting bets (auto-closed)");
-      return res.status(403).json({
-        // HTTP 403 Forbidden for auto-closed games
-        success: false,
-        message:
-          "This game has been automatically closed and is no longer accepting bets",
-        currentStatus: game.currentStatus,
-        acceptingBets: false,
-      });
+      if (gameStatus === "open") {
+        // Self-heal race: if time window says OPEN but flag is false (cron delay), flip it
+        console.log("⚠️ acceptingBets=false but status=open — enabling acceptingBets now");
+        try {
+          await Game.findByIdAndUpdate(game._id, {
+            $set: { acceptingBets: true, currentStatus: "open", lastStatusChange: new Date() },
+            $unset: { forcedStatus: "" },
+          });
+        } catch (e) {
+          console.warn("Could not update acceptingBets flag immediately:", e);
+        }
+        // Continue without blocking
+      } else {
+        console.log("❌ Game not accepting bets (auto-closed)");
+        return res.status(403).json({
+          // HTTP 403 Forbidden for auto-closed games
+          success: false,
+          message:
+            "This game has been automatically closed and is no longer accepting bets",
+          currentStatus: game.currentStatus,
+          acceptingBets: false,
+        });
+      }
     }
 
     // Enhanced UTC time check for auto-close
