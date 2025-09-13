@@ -1,6 +1,6 @@
-import * as cron from 'node-cron';
-import Game from '../models/Game';
-import { istMidnightUTCms, hmToMinutes } from '../utils/time';
+import * as cron from "node-cron";
+import Game from "../models/Game";
+import { istMidnightUTCms, hmToMinutes } from "../utils/time";
 
 class AutoCloseService {
   private static instance: AutoCloseService;
@@ -36,8 +36,8 @@ class AutoCloseService {
 
       const activeGames = await Game.find({
         isActive: true,
-        currentStatus: { $in: ['open', 'waiting'] }
-      }).select('name startTime endTime currentStatus timezone');
+        currentStatus: { $in: ["open", "waiting"] },
+      }).select("name startTime endTime currentStatus timezone");
 
       let closedCount = 0;
 
@@ -46,17 +46,21 @@ class AutoCloseService {
           const gameEndTimeUTC = this.timeToUTC(game.endTime);
 
           // 1 minute buffer
-          const endTimeWithBuffer = new Date(gameEndTimeUTC.getTime() + 1 * 60 * 1000);
+          const endTimeWithBuffer = new Date(
+            gameEndTimeUTC.getTime() + 1 * 60 * 1000,
+          );
 
           if (now >= endTimeWithBuffer) {
             await Game.findByIdAndUpdate(game._id, {
-              currentStatus: 'closed',
+              currentStatus: "closed",
               acceptingBets: false,
               lastStatusChange: now,
-              autoClosedAt: now
+              autoClosedAt: now,
             });
 
-            console.log(`🔒 Auto-closed: ${game.name} (ended at ${game.endTime} IST)`);
+            console.log(
+              `🔒 Auto-closed: ${game.name} (ended at ${game.endTime} IST)`,
+            );
             closedCount++;
           }
         } catch (gameError) {
@@ -67,10 +71,12 @@ class AutoCloseService {
       if (closedCount > 0) {
         console.log(`✅ Auto-closed ${closedCount} expired games`);
       } else {
-        console.log(`⏳ No games needed closing (checked ${activeGames.length} active games)`);
+        console.log(
+          `⏳ No games needed closing (checked ${activeGames.length} active games)`,
+        );
       }
     } catch (error) {
-      console.error('❌ Error in auto-close worker:', error);
+      console.error("❌ Error in auto-close worker:", error);
     }
   }
 
@@ -78,7 +84,7 @@ class AutoCloseService {
    * Startup sweep to close any games that should have been closed
    */
   private async startupSweep(): Promise<void> {
-    console.log('🧹 Running startup sweep for expired games...');
+    console.log("🧹 Running startup sweep for expired games...");
     await this.autoCloseExpiredGames();
   }
 
@@ -87,29 +93,29 @@ class AutoCloseService {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log('⚠️  Auto-close service is already running');
+      console.log("⚠️  Auto-close service is already running");
       return;
     }
 
-    console.log('🚀 Starting auto-close service...');
+    console.log("🚀 Starting auto-close service...");
 
     // Run startup sweep first
     await this.startupSweep();
 
     // Schedule cron job to run every 60 seconds
     this.cronJob = cron.schedule(
-      '*/60 * * * * *',
+      "*/60 * * * * *",
       async () => {
         await this.autoCloseExpiredGames();
       },
-      { scheduled: false } as any // keep typings simple across node-cron versions
+      { scheduled: false } as any, // keep typings simple across node-cron versions
     );
 
     // Start the cron job
     this.cronJob.start();
     this.isRunning = true;
 
-    console.log('✅ Auto-close service started (runs every 60 seconds)');
+    console.log("✅ Auto-close service started (runs every 60 seconds)");
   }
 
   /**
@@ -121,14 +127,14 @@ class AutoCloseService {
       this.cronJob = null;
     }
     this.isRunning = false;
-    console.log('🛑 Auto-close service stopped');
+    console.log("🛑 Auto-close service stopped");
   }
 
   /**
    * Manual trigger for testing
    */
   async triggerManualClose(): Promise<void> {
-    console.log('🔧 Manual trigger: auto-close check');
+    console.log("🔧 Manual trigger: auto-close check");
     await this.autoCloseExpiredGames();
   }
 
@@ -138,7 +144,7 @@ class AutoCloseService {
   getStatus(): { isRunning: boolean; nextRun: string | null } {
     return {
       isRunning: this.isRunning,
-      nextRun: this.cronJob ? 'Every 60 seconds' : null
+      nextRun: this.cronJob ? "Every 60 seconds" : null,
     };
   }
 
@@ -150,15 +156,17 @@ class AutoCloseService {
       const now = new Date();
 
       await Game.findByIdAndUpdate(gameId, {
-        currentStatus: 'closed',
+        currentStatus: "closed",
         acceptingBets: false,
         lastStatusChange: now,
         manuallyClosedAt: now,
-        manuallyClosedBy: adminId
+        manuallyClosedBy: adminId,
       });
 
-      const game = await Game.findById(gameId).select('name');
-      console.log(`🔒 Manually closed: ${game?.name} by admin ${adminId || 'system'}`);
+      const game = await Game.findById(gameId).select("name");
+      console.log(
+        `🔒 Manually closed: ${game?.name} by admin ${adminId || "system"}`,
+      );
     } catch (error) {
       console.error(`❌ Error force closing game ${gameId}:`, error);
       throw error;

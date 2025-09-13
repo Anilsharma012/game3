@@ -195,7 +195,9 @@ class AutoCloseEnhancedService {
 
     // Result relative to end (roll to next day if earlier than end time)
     const resultDayOffset = resultM < endM ? 1440 : 0;
-    const resultUTC = new Date(midnightUTC + (resultM + resultDayOffset) * 60 * 1000);
+    const resultUTC = new Date(
+      midnightUTC + (resultM + resultDayOffset) * 60 * 1000,
+    );
 
     return { startUTC, endUTC, resultUTC };
   }

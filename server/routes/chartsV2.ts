@@ -5,8 +5,6 @@ import { istDateString, IST_TIMEZONE } from "../utils/time";
 
 const router = express.Router();
 
-
-
 // TOP imports ke niche add karo:
 function getDeclaredByName(declaredBy: unknown): string {
   if (
@@ -18,7 +16,6 @@ function getDeclaredByName(declaredBy: unknown): string {
   }
   return "System";
 }
-
 
 /**
  * GET /api/charts/results
@@ -145,7 +142,6 @@ router.get("/results/by-date", async (req, res) => {
       status: result.status,
       method: result.method,
       declaredBy: getDeclaredByName(result.declaredBy),
-
 
       // UI helpers
       icon: getMarketIcon(result.marketId),

@@ -11,7 +11,11 @@ export function istDateString(date: Date = new Date()): string {
   return formatted; // en-CA => YYYY-MM-DD
 }
 
-export function getISTYMD(date: Date = new Date()): { year: number; month: number; day: number } {
+export function getISTYMD(date: Date = new Date()): {
+  year: number;
+  month: number;
+  day: number;
+} {
   const [y, m, d] = istDateString(date).split("-").map(Number);
   return { year: y, month: m, day: d };
 }
