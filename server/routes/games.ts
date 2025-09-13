@@ -73,9 +73,10 @@ export const getAllGames: RequestHandler = async (req, res) => {
       if (game.forcedStatus === "closed") {
         status = "closed";
       } else if (game.forcedStatus === "open") {
-        const canNaturallyOpen = endM > startM
-          ? currentM >= startM && currentM < endM
-          : currentM >= startM || currentM < endM;
+        const canNaturallyOpen =
+          endM > startM
+            ? currentM >= startM && currentM < endM
+            : currentM >= startM || currentM < endM;
         if (canNaturallyOpen && status !== "result_declared") {
           status = "open";
         }
@@ -125,7 +126,8 @@ export const getGameById: RequestHandler = async (req, res) => {
     }
 
     // Calculate current status (IST-aware + cross-day)
-    let currentStatus: "waiting" | "open" | "closed" | "result_declared" = "waiting";
+    let currentStatus: "waiting" | "open" | "closed" | "result_declared" =
+      "waiting";
     if (game.isActive) {
       const toMinutes = (t: string) => {
         const [h, m] = t.split(":").map(Number);
@@ -145,16 +147,20 @@ export const getGameById: RequestHandler = async (req, res) => {
           else if (currentM >= resultM) currentStatus = "result_declared";
         } else {
           if (currentM >= endM) currentStatus = "closed";
-          else if (currentM < startM && currentM >= resultM) currentStatus = "result_declared";
+          else if (currentM < startM && currentM >= resultM)
+            currentStatus = "result_declared";
         }
       } else {
         if (currentM >= startM || currentM < endM) currentStatus = "open";
         else if (resultM > endM) {
           if (currentM >= endM && currentM < resultM) currentStatus = "closed";
-          else if (currentM >= resultM && currentM < startM) currentStatus = "result_declared";
+          else if (currentM >= resultM && currentM < startM)
+            currentStatus = "result_declared";
         } else {
-          if ((currentM >= endM && currentM < 1440) || currentM < resultM) currentStatus = "closed";
-          else if (currentM >= resultM && currentM < startM) currentStatus = "result_declared";
+          if ((currentM >= endM && currentM < 1440) || currentM < resultM)
+            currentStatus = "closed";
+          else if (currentM >= resultM && currentM < startM)
+            currentStatus = "result_declared";
         }
       }
 
@@ -164,8 +170,12 @@ export const getGameById: RequestHandler = async (req, res) => {
       if (game.forcedStatus === "closed") {
         currentStatus = "closed";
       } else if (game.forcedStatus === "open") {
-        const canNaturallyOpen = endM > startM ? (currentM >= startM && currentM < endM) : (currentM >= startM || currentM < endM);
-        if (canNaturallyOpen && currentStatus !== "result_declared") currentStatus = "open";
+        const canNaturallyOpen =
+          endM > startM
+            ? currentM >= startM && currentM < endM
+            : currentM >= startM || currentM < endM;
+        if (canNaturallyOpen && currentStatus !== "result_declared")
+          currentStatus = "open";
       }
     }
 
@@ -321,9 +331,10 @@ export const placeBet: RequestHandler = async (req, res) => {
       if (game.forcedStatus === "closed") {
         gameStatus = "closed";
       } else if (game.forcedStatus === "open") {
-        const canNaturallyOpen = endMinutes > startMinutes
-          ? currentMinutes >= startMinutes && currentMinutes < endMinutes
-          : currentMinutes >= startMinutes || currentMinutes < endMinutes;
+        const canNaturallyOpen =
+          endMinutes > startMinutes
+            ? currentMinutes >= startMinutes && currentMinutes < endMinutes
+            : currentMinutes >= startMinutes || currentMinutes < endMinutes;
         if (!(canNaturallyOpen && gameStatus === "open")) {
           // keep computed status; do not allow pre-start/post-end bets
         }
@@ -348,10 +359,16 @@ export const placeBet: RequestHandler = async (req, res) => {
     if (game.acceptingBets === false) {
       if (gameStatus === "open") {
         // Self-heal race: if time window says OPEN but flag is false (cron delay), flip it
-        console.log("⚠️ acceptingBets=false but status=open — enabling acceptingBets now");
+        console.log(
+          "⚠️ acceptingBets=false but status=open — enabling acceptingBets now",
+        );
         try {
           await Game.findByIdAndUpdate(game._id, {
-            $set: { acceptingBets: true, currentStatus: "open", lastStatusChange: new Date() },
+            $set: {
+              acceptingBets: true,
+              currentStatus: "open",
+              lastStatusChange: new Date(),
+            },
             $unset: { forcedStatus: "" },
           });
         } catch (e) {

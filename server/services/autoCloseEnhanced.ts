@@ -1,6 +1,10 @@
 import * as cron from "node-cron";
 import Game from "../models/Game";
-import { istMidnightUTCms, hmToMinutes, currentISTMinutes } from "../utils/time";
+import {
+  istMidnightUTCms,
+  hmToMinutes,
+  currentISTMinutes,
+} from "../utils/time";
 import { istMidnightUTCms, hmToMinutes } from "../utils/time";
 
 class AutoCloseEnhancedService {
