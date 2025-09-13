@@ -235,8 +235,7 @@ export const placeBet: RequestHandler = async (req, res) => {
 
     if (game.isActive) {
       // Calculate based on time with proper cross-day handling (IST-aware)
-      const nowUTC = new Date();
-      const nowIST = new Date(nowUTC.getTime() + 5.5 * 60 * 60 * 1000);
+      const { currentISTMinutes } = require("../utils/time");
 
       // Helper function to convert HH:mm to minutes for comparison
       const timeToMinutes = (time: string) => {
@@ -244,7 +243,7 @@ export const placeBet: RequestHandler = async (req, res) => {
         return hours * 60 + minutes;
       };
 
-      const currentMinutes = nowIST.getHours() * 60 + nowIST.getMinutes();
+      const currentMinutes = currentISTMinutes(new Date());
       const startMinutes = timeToMinutes(game.startTime);
       const endMinutes = timeToMinutes(game.endTime);
       const resultMinutes = timeToMinutes(game.resultTime);
